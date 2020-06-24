@@ -10,12 +10,11 @@ const bodyparser = require('koa-bodyparser')
 const logger = require('koa-logger')
 
 
-const attendance = require('./routes/attendance')
-const teamRouter = require('./routes/team')
-const users = require('./routes/users')
-const task = require('./routes/task')
+const user = require('./routes/user')
+const files = require('./routes/files')
 
 const SECRET = 'secret'; // demo，可更换
+
 
 // error handler
 onerror(app)
@@ -24,19 +23,18 @@ app.use(cors());
 
 // middlewares 第二步:app.use()传入中间件
 app.use(bodyparser({
-  enableTypes:['json', 'form', 'text']
+  enableTypes:['json', 'form', 'text'],
+  
 }))
 app.use(json())
 app.use(logger())
 app.use(require('koa-static')(__dirname + '/public'))
-
 app.use(views(__dirname + '/views', {
   extension: 'pug'
 }))
 
-// logger
+logger
 app.use(async (ctx, next) => {
-  const start = new Date()
   await next().catch(err=>{
     if (err.message === 'jwt expired') {
       ctx.body = {
@@ -51,12 +49,11 @@ app.use(async (ctx, next) => {
 })
 
 app.use(async(ctx, next)=> {
-  var token = ctx.headers.authorization;
+  const token = ctx.cookies.get('netdisk-token');
   if(!token){
     await next();
   }else{
-    const userInfo = jwt.verify(token.split(' ')[1], SECRET)
-    console.log(userInfo);
+    const userInfo = jwt.verify(token, SECRET)
     ctx.state = {
       userInfo
     };
@@ -64,13 +61,16 @@ app.use(async(ctx, next)=> {
   }
 })
 
+
+
 // 中间件对token进行验证
 app.use(async (ctx, next) => {
   return next().catch((err) => {
     if (err.status === 401) {
-      ctx.status = 401;
+      ctx.status = 200;
       ctx.body = {
-        msg: '登录过期，请重新登录',
+        code: 401,
+        msg: '登录过期或已失效，请重新登录',
         success: false
       }
     } else {
@@ -79,18 +79,14 @@ app.use(async (ctx, next) => {
   })
 });
 
-// const SECRET = 'secret'; // demo，可更换
-app.use(koajwt({ secret: SECRET}).unless({
+app.use(koajwt({ secret: SECRET, cookie: 'netdisk-token'}).unless({
   // 登录，注册接口不需要验证
-  path: [/^\/user\/login/, /^\/user\/register/,/^\/user\/getQuestion/,
-    /^\/user\/getQuestion/, /^\/user\/upload/]
+  path: [/^\/user\/login/, /^\/user\/register/, /^\/file\/upload/]
 }));
 
 // routes
-app.use(attendance.routes(), attendance.allowedMethods())
-app.use(teamRouter.routes(), teamRouter.allowedMethods())
-app.use(users.routes(), users.allowedMethods())
-app.use(task.routes(), task.allowedMethods())
+app.use(user.routes(), user.allowedMethods())
+app.use(files.routes(), files.allowedMethods())
 
 // error-handling
 app.on('error', (err, ctx) => {
