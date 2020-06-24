@@ -22,8 +22,10 @@ router.prefix('/file')
 
 router.post('/upload', upload.single("file"), Controller.add);
 router.post('/list', Controller.list);
+router.post('/shareList', Controller.shareList);
 router.post('/delete', Controller.delete);
 router.post('/update', Controller.update);
 router.post('/createShare', Controller.createShare);
+router.post('/shareDetail', Controller.shareDetail);
 
 module.exports = router;

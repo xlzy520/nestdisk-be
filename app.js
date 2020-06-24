@@ -12,6 +12,7 @@ const logger = require('koa-logger')
 
 const user = require('./routes/user')
 const files = require('./routes/files')
+const staticFile = require('./routes/static')
 
 const SECRET = 'secret'; // demo，可更换
 
@@ -28,7 +29,7 @@ app.use(bodyparser({
 }))
 app.use(json())
 app.use(logger())
-app.use(require('koa-static')(__dirname + '/public'))
+app.use(require('koa-static')(__dirname + '/static/'))
 app.use(views(__dirname + '/views', {
   extension: 'pug'
 }))
@@ -81,12 +82,13 @@ app.use(async (ctx, next) => {
 
 app.use(koajwt({ secret: SECRET, cookie: 'netdisk-token'}).unless({
   // 登录，注册接口不需要验证
-  path: [/^\/user\/login/, /^\/user\/register/, /^\/file\/upload/]
+  path: [/^\/user\/login/, /^\/user\/register/, /^\/file\/shareDetail/, /^\/static/]
 }));
 
 // routes
 app.use(user.routes(), user.allowedMethods())
 app.use(files.routes(), files.allowedMethods())
+app.use(staticFile.routes(), staticFile.allowedMethods())
 
 // error-handling
 app.on('error', (err, ctx) => {

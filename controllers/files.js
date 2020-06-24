@@ -1,7 +1,10 @@
 const fileModel = require('../modules/files');
+const userModel = require('../schema/user');
 const result = require('../utils/result');
 const crypto = require('crypto')
 const fs = require('fs')
+const sequelize= require('../config/db');
+const Op = sequelize.Op;
 
 let readFileMd5 = (url) =>{
   return new Promise((reslove) => {
@@ -32,11 +35,13 @@ class FilesController {
     }
   }
   static async delete(ctx, next) {
-    const { id } = ctx.request.body;
-    let one = await fileModel.findOne({id});
+    const query = ctx.request.body;
+    let one = await fileModel.findOne(query);
     if (one) {
-      one.isDeleted = 1
-      const newOne = await fileModel.update(one);
+      const newOne = await fileModel.update({
+        id: one.id,
+        isDeleted: true
+      });
       ctx.body = result({
         newOne,
       }, '删除成功')
@@ -54,7 +59,10 @@ class FilesController {
   static async createShare(ctx) {
     const newData = ctx.request.body;
     newData.userId = ctx.state.userInfo.id
-    newData.shareKey = Math.random().toString(36).substr(2).slice(1,5)
+    if (newData.shareType === 'private') {
+      newData.shareKey = Math.random().toString(36).substr(2).slice(1,5)
+    }
+    newData.shareUrl = Math.random().toString(36).substr(2).slice(1,10)
     await fileModel.update(newData);
     ctx.body = result(newData, '更新成功')
   }
@@ -64,6 +72,53 @@ class FilesController {
     let list = await fileModel.findList({
       ...query,
       isDeleted: false
+    });
+    ctx.body = result({list},'查询成功')
+  }
+  
+  static async shareDetail(ctx, next) {
+    const query = ctx.request.body
+    if (!query.shareKey) {
+      const one = await fileModel.findOneWithUser({
+        shareUrl: query.shareUrl,
+        isDeleted: false,
+      }, {
+        exclude: ['shareKey'],
+      });
+      one.user.name = one.user.name.replace(/(.{3})(.+)/g, ($1, $2, $3) => {
+        return $2 + "*".repeat($3.length-3);
+      })
+      if (one.shareType !== 'open') {
+        delete one.path
+      }
+      ctx.body = result(one,'查询成功')
+    } else {
+      const one = await fileModel.findOneWithUser({
+        ...query,
+        isDeleted: false
+      });
+      if (one) {
+        one.user.name = one.user.name.replace(/(.{3})(.+)/g, ($1, $2, $3) => {
+          return $2 + "*".repeat($3.length-3);
+        })
+        ctx.body = result(one,'查询成功')
+      } else {
+        ctx.body = result(null,'密码不正确', false)
+      }
+    }
+    
+  }
+  
+  static async shareList(ctx, next) {
+    const userId = ctx.state.userInfo.id
+    const query = ctx.request.body
+    let list = await fileModel.findList({
+      ...query,
+      userId,
+      isDeleted: false,
+      shareType: {
+        [Op.not]: null
+      }
     });
     ctx.body = result({list},'查询成功')
   }
