@@ -52,6 +52,7 @@ class FilesController {
   
   static async update(ctx) {
     const role = ctx.state.userInfo.role
+    const id = ctx.state.userInfo.id
     const newData = ctx.request.body;
     if (role === 'admin' || newData.userId === id) {
       await fileModel.update(newData);
