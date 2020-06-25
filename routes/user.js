@@ -17,7 +17,7 @@ router.delete('/delete/:id', UserController.delete);
 // // 获取用户信息
 router.get('/info', UserController.getUserInfo);
 // 获取用户列表
-router.post('/list', UserController.list);
+router.post('/list', UserController.adminList);
 router.post('/delete', UserController.delete);
 router.post('/update', UserController.update);
 

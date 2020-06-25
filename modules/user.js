@@ -1,15 +1,16 @@
 const sequelize= require('../config/db');
 const User = sequelize.import('../schema/user');
+const Files = sequelize.import('../schema/files');
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 // 通过 sync 方法同步数据结构
 // 即,创建表
 User.sync({force: false})
+User.hasMany(Files)
 
 
 class UserModel{
   static async findUser(query, attributes){
-    console.log(query);
     return await User.findOne({
       where: query,
       attributes: attributes,
@@ -64,11 +65,11 @@ class UserModel{
   }
   
   static async adminList(conditions){
-    let { name='', pageNo = 1, start, end, pageSize = 10, ...rest } = conditions
+    let { name='', pageNo = 1, start, end, pageSize = 100, ...rest } = conditions
     let offset = (pageNo - 1) * pageSize;
     return await User.findAndCountAll({
       attributes: {
-        exclude: ['password', 'answer'],
+        exclude: ['password'],
       },
       where: {
         name: {
@@ -78,7 +79,12 @@ class UserModel{
         ...rest
       },
       offset,
-      limit: pageSize
+      limit: pageSize,
+      include: [{
+        model: Files,
+        attributes: ['name'],
+        raw: false
+      }]
     })
   }
 }

@@ -25,11 +25,12 @@ class UserController {
         // 创建用户
         await userModel.create(user);
         let newUser = await userModel.findUser({name})
-        
+  
         // 签发token
         const userToken = {
           name,
-          id: newUser.id
+          id: newUser.id,
+          role: newUser.role
         }
         
         // 储存token失效有效期1小时
@@ -57,8 +58,14 @@ class UserController {
   
   static async adminList(ctx, next) {
     const query = ctx.request.body;
-    let data = await userModel.adminList(query);
-    ctx.body = result(data, '查询成功')
+    const role = ctx.state.userInfo.role
+    if (role === 'admin') {
+      let list = await userModel.adminList(query);
+      ctx.body = result({list}, '查询成功')
+    } else {
+      ctx.body = result(null,'无权限操作', false)
+    }
+    
   }
   
   /**
@@ -77,7 +84,8 @@ class UserController {
         if (bcrypt.compareSync(password, user.password)) {
           const userToken = {
             name,
-            id: user.id
+            id: user.id,
+            role: user.role
           }
           // 签发token
           const token = jwt.sign(userToken, secret.sign, {expiresIn: '24h'});
@@ -88,7 +96,7 @@ class UserController {
             {
               domain: 'localhost',  // 写cookie所在的域名
               path: '/',       // 写cookie所在的路径
-              maxAge: 24 * 60 * 1000, // cookie有效时长
+              maxAge: 24 * 60 * 60 * 1000, // cookie有效时长
               httpOnly: false,  // 是否只用于http请求中获取
               overwrite: false  // 是否允许重写
             }
@@ -96,6 +104,7 @@ class UserController {
           ctx.body = result({
             id: user.id,
             name: user.name,
+            role: user.role,
             token: token
           }, '登录成功')
         } else {

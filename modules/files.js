@@ -44,7 +44,7 @@ class FilesModel{
   }
   
   static async findList(query){
-    let { name='', pageNo = 1, start, end, pageSize = 100, ...rest } = query
+    let { name='', pageNo = 1, start, end, pageSize = 1000, ...rest } = query
     let offset = (pageNo - 1) * pageSize;
     return await Files.findAndCountAll({
       attributes: {
@@ -58,7 +58,13 @@ class FilesModel{
         ...rest
       },
       offset,
-      limit: pageSize
+      limit: pageSize,
+      include: [{
+        model: user,
+        where: { id: sequelize.col('files.userId') },
+        attributes: ['name'],
+        raw: true
+      }]
     })
   }
   

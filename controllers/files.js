@@ -51,9 +51,15 @@ class FilesController {
   }
   
   static async update(ctx) {
+    const role = ctx.state.userInfo.role
     const newData = ctx.request.body;
-    await fileModel.update(newData);
-    ctx.body = result(null, '更新成功')
+    if (role === 'admin' || newData.userId === id) {
+      await fileModel.update(newData);
+      ctx.body = result(null, '更新成功')
+    } else {
+      ctx.body = result(null,'无权限操作', false)
+    }
+   
   }
   
   static async createShare(ctx) {
@@ -68,12 +74,29 @@ class FilesController {
   }
   
   static async list(ctx, next) {
+    const userId = ctx.state.userInfo.id
     const query = ctx.request.body
     let list = await fileModel.findList({
       ...query,
+      userId,
       isDeleted: false
     });
     ctx.body = result({list},'查询成功')
+  }
+  
+  static async adminList(ctx, next) {
+    const query = ctx.request.body
+    const role = ctx.state.userInfo.role
+    if (role === 'admin') {
+      let list = await fileModel.findList({
+        ...query,
+        isDeleted: false
+      });
+      ctx.body = result({list},'查询成功')
+    } else {
+      ctx.body = result(null,'无权限操作', false)
+    }
+   
   }
   
   static async shareDetail(ctx, next) {
