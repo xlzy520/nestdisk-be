@@ -129,14 +129,14 @@ class UserController {
   
   
   static async delete(ctx, next) {
-    const { name } = ctx.request.body;
-    let user = await userModel.findUser(name);
+    const query = ctx.request.body;
+    let user = await userModel.findUser(query);
     if (user) {
-      user.isDeleted = 1
-      const tag = await userModel.update(user);
-      ctx.body = result({
-        tag,
-      }, '删除成功')
+      await userModel.update({
+        ...query,
+        isDeleted: true
+      });
+      ctx.body = result(query, '删除成功')
     } else {
       ctx.body = result(null, '删除失败，用户不存在', false)
     }
