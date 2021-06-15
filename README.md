@@ -6,6 +6,6 @@
 
 ### 启动
 1. 安装mysql，然后记住账号和密码
-2. 新建netdisk数据库
+2. 新建一个数据库，取名netdisk
 3. 前往`config/db.js`的第六行修改数据库配置
-4. `npm i `启动
+4. `npm i `安装依赖之后`npm run dev`启动
